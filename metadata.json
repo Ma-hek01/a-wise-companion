@@ -1,0 +1,8 @@
+{
+  "name": "A Wise Companion",
+  "description": "**A Wise Companion** is a personal product-experience companion designed to help people make more sense of their wellness and skincare routines.\n\nTrack the products you use, organise your routines, record your experiences and discover useful patterns over time. With simple feedback options and personalised Reality Checks, the app helps you reflect on what is working, what isn't, and what you may want to change.\n\nBuilt around a simple idea: **Your routine should work for you, not the other way around.**\n\nAn independent student-built prototype exploring how better customer experiences and structured feedback can improve the way people interact with wellness products.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
