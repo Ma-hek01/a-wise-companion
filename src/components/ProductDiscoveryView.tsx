@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -37,22 +36,25 @@ type SortOption =
   | 'variants-desc'
   | 'category';
 
-type AvailabilityFilter = 'All' | CatalogAvailabilityStatus;
+type ExplicitAvailabilityStatus = 'In Stock' | 'Out of Stock';
+type AvailabilityFilter = 'All' | ExplicitAvailabilityStatus;
 
-function getAvailabilityTextClass(status: CatalogAvailabilityStatus): string {
-  if (status === 'In Stock') return 'font-medium text-emerald-700';
-  if (status === 'Out of Stock') return 'font-medium text-amber-700';
-  return 'font-medium text-slate-600';
+function isExplicitAvailability(
+  status: CatalogAvailabilityStatus
+): status is ExplicitAvailabilityStatus {
+  return status === 'In Stock' || status === 'Out of Stock';
 }
 
-function getAvailabilityBadgeClass(status: CatalogAvailabilityStatus): string {
-  if (status === 'In Stock') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  }
-  if (status === 'Out of Stock') {
-    return 'border-amber-200 bg-amber-50 text-amber-800';
-  }
-  return 'border-slate-300 border-dashed bg-slate-50 text-slate-600';
+function getAvailabilityTextClass(status: ExplicitAvailabilityStatus): string {
+  return status === 'In Stock'
+    ? 'font-medium text-emerald-700'
+    : 'font-medium text-amber-700';
+}
+
+function getAvailabilityBadgeClass(status: ExplicitAvailabilityStatus): string {
+  return status === 'In Stock'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+    : 'border-amber-200 bg-amber-50 text-amber-800';
 }
 
 function formatVariantSummary(variants: CatalogVariant[]): string {
@@ -287,7 +289,7 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
     const currentAvailability =
       activeVariant?.availabilityStatus ?? selectedProduct.availabilityStatus;
     const currentUrl = activeVariant?.url || selectedProduct.officialUrl;
-    const isUnverified = currentAvailability === 'Availability not verified';
+    const hasExplicitAvailability = isExplicitAvailability(currentAvailability);
 
     return (
       <div className="space-y-6">
@@ -320,33 +322,23 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
               size="detail"
             />
 
-            <div
-              className={`rounded-xl border p-4 text-xs leading-relaxed ${
-                isUnverified
-                  ? 'border-slate-200 bg-slate-50 text-slate-600'
-                  : 'border-slate-200 bg-white text-slate-600'
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                {isUnverified ? (
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-                ) : (
+            {hasExplicitAvailability && (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-600">
+                <div className="flex items-start gap-2.5">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                )}
-                <div>
-                  <p className="font-semibold text-slate-900">
-                    {selectedProduct.verificationStatus}
-                  </p>
-                  <p className="mt-1">
-                    {isUnverified
-                      ? 'Official stock status could not be verified on bebodywise.com for this listing. You can still add and track this product in My Products if you already own it.'
-                      : currentAvailability === 'Out of Stock'
-                      ? 'Currently marked Out of Stock on bebodywise.com. You can still add it to My Products to track a bottle you already own.'
-                      : 'Stock status and product details verified on bebodywise.com.'}
-                  </p>
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      {selectedProduct.verificationStatus}
+                    </p>
+                    <p className="mt-1">
+                      {currentAvailability === 'Out of Stock'
+                        ? 'Currently marked Out of Stock on bebodywise.com. You can still add it to My Products to track a bottle you already own.'
+                        : 'Stock status and product details verified on bebodywise.com.'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Column: Details, Variants, Ingredients, Actions */}
@@ -359,31 +351,35 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                 {selectedProduct.name}
               </h2>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium ${getAvailabilityBadgeClass(
-                    currentAvailability
-                  )}`}
-                >
-                  {isUnverified ? (
-                    <AlertCircle className="h-3 w-3" />
-                  ) : (
-                    <ShieldCheck className="h-3 w-3" />
+              {(hasExplicitAvailability || activeVariant?.sku) && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  {hasExplicitAvailability && (
+                    <>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium ${getAvailabilityBadgeClass(
+                          currentAvailability
+                        )}`}
+                      >
+                        <ShieldCheck className="h-3 w-3" />
+                        <span>{currentAvailability}</span>
+                      </span>
+                      <span className="text-slate-500">
+                        {selectedProduct.verificationStatus}
+                      </span>
+                    </>
                   )}
-                  <span>{currentAvailability}</span>
-                </span>
-                <span className="text-slate-500">
-                  {selectedProduct.verificationStatus}
-                </span>
-                {activeVariant?.sku && (
-                  <>
-                    <span className="text-slate-300">·</span>
-                    <span className="text-slate-500 tabular-nums">
-                      SKU: {activeVariant.sku}
-                    </span>
-                  </>
-                )}
-              </div>
+                  {activeVariant?.sku && (
+                    <>
+                      {hasExplicitAvailability && (
+                        <span className="text-slate-300">·</span>
+                      )}
+                      <span className="text-slate-500 tabular-nums">
+                        SKU: {activeVariant.sku}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 border-t border-slate-100 pt-4">
                 <p className="text-xs font-medium text-slate-500">
@@ -423,13 +419,15 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                             {variant.label}
                             {showPack ? ` (${variant.sizeOrPack})` : ''}
                           </div>
-                          <div
-                            className={`mt-0.5 text-[11px] ${getAvailabilityTextClass(
-                              variant.availabilityStatus
-                            )}`}
-                          >
-                            {variant.availabilityStatus}
-                          </div>
+                          {isExplicitAvailability(variant.availabilityStatus) && (
+                            <div
+                              className={`mt-0.5 text-[11px] ${getAvailabilityTextClass(
+                                variant.availabilityStatus
+                              )}`}
+                            >
+                              {variant.availabilityStatus}
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -598,9 +596,6 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
               <option value="All">All Products</option>
               <option value="In Stock">In Stock</option>
               <option value="Out of Stock">Out of Stock</option>
-              <option value="Availability not verified">
-                Availability not verified
-              </option>
             </select>
           </div>
 
@@ -703,8 +698,13 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                     Availability & Verification
                   </td>
                   {comparedItems.map((item) => {
-                    const isVerifiedListing =
-                      item.availabilityStatus !== 'Availability not verified';
+                    if (!isExplicitAvailability(item.availabilityStatus)) {
+                      return (
+                        <td key={item.id} className="py-2.5 px-3 text-slate-400">
+                          —
+                        </td>
+                      );
+                    }
                     return (
                       <td key={item.id} className="py-2.5 px-3">
                         <span
@@ -712,11 +712,7 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                             item.availabilityStatus
                           )}`}
                         >
-                          {isVerifiedListing ? (
-                            <ShieldCheck className="h-3 w-3" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3" />
-                          )}
+                          <ShieldCheck className="h-3 w-3" />
                           <span>{item.availabilityStatus}</span>
                         </span>
                         <p className="mt-1 text-[11px] text-slate-500">
@@ -733,7 +729,11 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                   {comparedItems.map((item) => (
                     <td key={item.id} className="py-2.5 px-3">
                       {item.variants
-                        .map((v) => `${v.label} (${v.availabilityStatus})`)
+                        .map((v) =>
+                          isExplicitAvailability(v.availabilityStatus)
+                            ? `${v.label} (${v.availabilityStatus})`
+                            : v.label
+                        )
                         .join(', ')}
                     </td>
                   ))}
@@ -829,8 +829,9 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
             const isCompared = compareIds.includes(item.id);
             const tracked = isAlreadyTracked(item);
             const variantMeta = formatVariantSummary(item.variants);
-            const isVerifiedListing =
-              item.availabilityStatus !== 'Availability not verified';
+            const hasExplicitAvailability = isExplicitAvailability(
+              item.availabilityStatus
+            );
 
             return (
               <article
@@ -867,18 +868,16 @@ export const ProductDiscoveryView: React.FC<ProductDiscoveryViewProps> = ({
                     </button>
 
                     <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs tabular-nums text-slate-500">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityBadgeClass(
-                          item.availabilityStatus
-                        )}`}
-                      >
-                        {isVerifiedListing ? (
+                      {hasExplicitAvailability && (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityBadgeClass(
+                            item.availabilityStatus as ExplicitAvailabilityStatus
+                          )}`}
+                        >
                           <ShieldCheck className="h-3 w-3" />
-                        ) : (
-                          <AlertCircle className="h-3 w-3" />
-                        )}
-                        <span>{item.availabilityStatus}</span>
-                      </span>
+                          <span>{item.availabilityStatus}</span>
+                        </span>
+                      )}
                       <span className="text-slate-500">{variantMeta}</span>
                     </div>
                   </div>
